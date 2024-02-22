@@ -49,12 +49,18 @@ app.get("/lands", async (req, res) => {
 
 app.get("/agents", async (req, res) => {
     const agents = await Agent.find();
-    return res.status(200).json(properties);
+    return res.status(200).json(agents);
 });
 
 app.get("/contacts", async (req, res) => {
-    const contacts = await Contact.find();
-    return res.status(200).json(contacts);
+    try {
+        const contacts = await Contact.find();
+        const count = contacts.length; // Calculate the count
+        res.json({ contacts, count });
+      } catch (error) {
+        console.error("Error fetching contacts:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+      }
 });
 
 app.post("/users", async (req, res) => {
