@@ -17,6 +17,10 @@ const agentSchema = new mongoose.Schema({
     languages: { type: String },
     linkedinUrl: { type: String },
     twitterUrl: { type: String },
+    isVerified: {
+        type: Boolean,
+        default: false,
+    },      
 });
 
 const Agent = mongoose.model('Agent', agentSchema);

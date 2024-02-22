@@ -21,6 +21,7 @@ const House = require('./houseSchema');
 const Land = require('./landSchema');
 const WishlistHouse = require('./wishlistHouseSchema');
 
+
 app.listen(5000, function () {
     console.log("server is running.....")
 });
@@ -88,8 +89,6 @@ app.post("/users", async (req, res) => {
     }
 });
 
-const jwt = require('jsonwebtoken');
-
 // Secret key for JWT
 const JWT_SECRET_KEY = 'DreamHome';
 
@@ -115,6 +114,22 @@ app.post("/login", async (req, res) => {
     }
 });
 
+// ... (other imports)
+
+app.put("/agents/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { isVerified } = req.body;
+
+        // Update the agent's isVerified field based on the provided ID
+        await Agent.findByIdAndUpdate(id, { $set: { isVerified } });
+
+        res.status(200).json({ message: 'Agent updated successfully' });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 
 app.post("/agents", async (req, res) => {
     try {
