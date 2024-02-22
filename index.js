@@ -5,8 +5,18 @@ const bodyParser = require('body-parser');
 const path = require("path");
 const cors = require('cors');
 const multer = require('multer');
+const morgan = require('morgan');
+const fs = require('fs');
 
 const app = express();
+
+const logsFolder = path.join(__dirname, 'logs');
+if (!fs.existsSync(logsFolder)) {
+  fs.mkdirSync(logsFolder);
+}
+const accessLogStream = fs.createWriteStream(path.join(logsFolder, 'access.log'), { flags: 'a' });
+
+app.use(morgan('combined', { stream: accessLogStream }));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cors());
@@ -21,6 +31,7 @@ const House = require('./houseSchema');
 const Land = require('./landSchema');
 const WishlistHouse = require('./wishlistHouseSchema');
 
+
 app.listen(5000, function () {
     console.log("server is running.....")
 });
@@ -28,8 +39,6 @@ app.listen(5000, function () {
 app.get('/image/:filename', (req, res) => {
     const filename = req.params.filename;
     const imagePath = path.join(__dirname, filename);
-    
-    // Send the image file
     res.sendFile(imagePath);
 });
 
@@ -54,8 +63,14 @@ app.get("/agents", async (req, res) => {
 });
 
 app.get("/contacts", async (req, res) => {
-    const contacts = await Contact.find();
-    return res.status(200).json(contacts);
+    try {
+        const contacts = await Contact.find();
+        const count = contacts.length; // Calculate the count
+        res.json({ contacts, count });
+      } catch (error) {
+        console.error("Error fetching contacts:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+      }
 });
 
 app.post("/users", async (req, res) => {
@@ -82,8 +97,6 @@ app.post("/users", async (req, res) => {
     }
 });
 
-const jwt = require('jsonwebtoken');
-
 // Secret key for JWT
 const JWT_SECRET_KEY = 'DreamHome';
 
@@ -109,6 +122,22 @@ app.post("/login", async (req, res) => {
     }
 });
 
+// ... (other imports)
+
+app.put("/agents/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { isVerified } = req.body;
+
+        // Update the agent's isVerified field based on the provided ID
+        await Agent.findByIdAndUpdate(id, { $set: { isVerified } });
+
+        res.status(200).json({ message: 'Agent updated successfully' });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 
 app.post("/agents", async (req, res) => {
     try {
@@ -298,9 +327,3 @@ app.post('/wishlistHouse', async (req, res) => {
     }
 });
   
-
-app.get('/wishlistHouses',async(req,res)=>{
-    const wishlistHouses = await WishlistHouse.find();
-    console.log(wishlistHouses);
-    return res.status(200).json(wishlistHouses);
-})
