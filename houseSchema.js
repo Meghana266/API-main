@@ -1,6 +1,10 @@
 const mongoose = require("mongoose");
 
 const houseSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User' // Assuming you have a User model
+    },
     title: String,
     location: String,
     price: Number,

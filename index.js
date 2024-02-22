@@ -140,9 +140,10 @@ const storage = multer.diskStorage({
 // Multer file upload configuration
 const upload = multer({ storage: storage });
 
-app.post('/houses', upload.array('images',10), async (req, res) => {
+app.post('/houses', upload.array('images', 10), async (req, res) => {
     try {
         const {
+            userId, // Add userId to the destructured request body
             title,
             location,
             price,
@@ -155,10 +156,10 @@ app.post('/houses', upload.array('images',10), async (req, res) => {
         } = req.body;
 
         const images = req.files.map(file => file.path); // Get paths of uploaded images
-        console.log(images);
 
         // Create a new house object
         const newHouse = new House({
+            userId, // Include userId in the new house object
             title,
             location,
             price,
@@ -173,7 +174,7 @@ app.post('/houses', upload.array('images',10), async (req, res) => {
       
         // Save the new house object to the database
         await newHouse.save();
-        console.log(req.file);
+
         res.status(201).json({ message: 'House posted successfully' });
     } catch (error) {
         console.error('Error:', error);
@@ -184,6 +185,7 @@ app.post('/houses', upload.array('images',10), async (req, res) => {
 app.post('/lands', upload.array('images', 10), async (req, res) => {
     try {
         const {
+            userId, // Add userId to the destructured request body
             title,
             location,
             price,
@@ -196,6 +198,7 @@ app.post('/lands', upload.array('images', 10), async (req, res) => {
 
         // Create a new land object
         const newLand = new Land({
+            userId, // Include userId in the new land object
             title,
             location,
             price,
@@ -214,3 +217,41 @@ app.post('/lands', upload.array('images', 10), async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
+
+// Delete a house
+// Delete a house
+app.post('/deleteHouse/:id', async (req, res) => {
+    const { id } = req.params;
+  
+    try {
+      // Delete the house based on the provided ID
+      await House.findByIdAndDelete(id);
+  
+      // Respond with a success message
+      res.status(200).json({ message: 'House deleted successfully' });
+    } catch (error) {
+      // If an error occurs during deletion, respond with an error message
+      console.error('Error:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+  // Delete a land
+app.post('/deleteLand/:id', async (req, res) => {
+    const { id } = req.params;
+  
+    try {
+      // Delete the land based on the provided ID
+      await Land.findByIdAndDelete(id);
+  
+      // Respond with a success message
+      res.status(200).json({ message: 'Land deleted successfully' });
+    } catch (error) {
+      // If an error occurs during deletion, respond with an error message
+      console.error('Error:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+  
