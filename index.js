@@ -19,6 +19,7 @@ const Agent = require('./agentSchema');
 const Contact = require('./contactSchema');
 const House = require('./houseSchema');
 const Land = require('./landSchema');
+const WishlistHouse = require('./wishlistHouseSchema');
 
 app.listen(5000, function () {
     console.log("server is running.....")
@@ -86,6 +87,34 @@ app.post("/users", async (req, res) => {
         return res.status(500).json({ error: "Internal server error" });
     }
 });
+
+const jwt = require('jsonwebtoken');
+
+// Secret key for JWT
+const JWT_SECRET_KEY = 'DreamHome';
+
+app.post("/login", async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // Find the user by email and password (You need to implement this logic)
+        const user = await User.findOne({ email, password });
+
+        if (!user) {
+            return res.status(401).json({ error: "Invalid email or password" });
+        }
+
+        // Generate JWT token with user ID as payload
+        const token = jwt.sign({ userId: user._id }, JWT_SECRET_KEY);
+
+        // Send the token in the response
+        res.status(200).json({ token });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 
 app.post("/agents", async (req, res) => {
     try {
@@ -229,7 +258,6 @@ app.post('/lands', upload.array('images', 10), async (req, res) => {
 // Delete a house
 app.post('/deleteHouse/:id', async (req, res) => {
     const { id } = req.params;
-  
     try {
       // Delete the house based on the provided ID
       await House.findByIdAndDelete(id);
@@ -259,5 +287,22 @@ app.post('/deleteLand/:id', async (req, res) => {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   });
+ 
   
+app.post('/wishlistHouse', async (req, res) => {
+    try {
+        const { userId, houseId } = req.body;
+        console.log(userId);
+        // Create a new WishlistHouse document
+        const wishlistHouse = new WishlistHouse({ userId, houseId });
+
+        // Save the new WishlistHouse document
+        await wishlistHouse.save();
+
+        res.status(201).json({ message: 'WishlistHouse created successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
   
