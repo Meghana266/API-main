@@ -249,7 +249,6 @@ app.post('/lands', upload.array('images', 10), async (req, res) => {
 
 
 // Delete a house
-// Delete a house
 app.post('/deleteHouse/:id', async (req, res) => {
     const { id } = req.params;
     try {
@@ -286,7 +285,6 @@ app.post('/deleteLand/:id', async (req, res) => {
 app.post('/wishlistHouse', async (req, res) => {
     try {
         const { userId, houseId } = req.body;
-        console.log(userId);
         // Create a new WishlistHouse document
         const wishlistHouse = new WishlistHouse({ userId, houseId });
 
@@ -300,3 +298,9 @@ app.post('/wishlistHouse', async (req, res) => {
     }
 });
   
+
+app.get('/wishlistHouses',async(req,res)=>{
+    const wishlistHouses = await WishlistHouse.find();
+    console.log(wishlistHouses);
+    return res.status(200).json(wishlistHouses);
+})
