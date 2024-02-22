@@ -5,8 +5,18 @@ const bodyParser = require('body-parser');
 const path = require("path");
 const cors = require('cors');
 const multer = require('multer');
+const morgan = require('morgan');
+const fs = require('fs');
 
 const app = express();
+
+const logsFolder = path.join(__dirname, 'logs');
+if (!fs.existsSync(logsFolder)) {
+  fs.mkdirSync(logsFolder);
+}
+const accessLogStream = fs.createWriteStream(path.join(logsFolder, 'access.log'), { flags: 'a' });
+
+app.use(morgan('combined', { stream: accessLogStream }));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cors());
@@ -29,8 +39,6 @@ app.listen(5000, function () {
 app.get('/image/:filename', (req, res) => {
     const filename = req.params.filename;
     const imagePath = path.join(__dirname, filename);
-    
-    // Send the image file
     res.sendFile(imagePath);
 });
 
@@ -321,3 +329,12 @@ app.post('/wishlistHouse', async (req, res) => {
     }
 });
   
+app.use((req, res, next) => {
+    res.status(404).json({ error: 'Not Found' });
+  });
+  
+  // Error-handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Internal Server Error' });
+});
