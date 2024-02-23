@@ -30,7 +30,7 @@ const Contact = require('./contactSchema');
 const House = require('./houseSchema');
 const Land = require('./landSchema');
 const WishlistHouse = require('./wishlistHouseSchema');
-
+const ContactRequest = require('./contactRequestSchema');
 
 app.listen(5000, function () {
     console.log("server is running.....")
@@ -97,40 +97,14 @@ app.post("/users", async (req, res) => {
     }
 });
 
-// Secret key for JWT
-const JWT_SECRET_KEY = 'DreamHome';
-
-app.post("/login", async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        // Find the user by email and password (You need to implement this logic)
-        const user = await User.findOne({ email, password });
-
-        if (!user) {
-            return res.status(401).json({ error: "Invalid email or password" });
-        }
-
-        // Generate JWT token with user ID as payload
-        const token = jwt.sign({ userId: user._id }, JWT_SECRET_KEY);
-
-        // Send the token in the response
-        res.status(200).json({ token });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Internal server error" });
-    }
-});
-
-// ... (other imports)
 
 app.put("/agents/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        const { isVerified } = req.body;
+        const { is_verified } = req.body;
 
         // Update the agent's isVerified field based on the provided ID
-        await Agent.findByIdAndUpdate(id, { $set: { isVerified } });
+        await Agent.findByIdAndUpdate(id, { $set: { is_verified } });
 
         res.status(200).json({ message: 'Agent updated successfully' });
     } catch (error) {
@@ -326,4 +300,57 @@ app.post('/wishlistHouse', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+app.post('/contactRequest', async (req, res) => {
+    try {
+      // Destructure the required fields from the request body
+      const { sender, recipientType, recipient, message } = req.body;
   
+      // Create a new contact request document
+      const newContactRequest = new ContactRequest({
+        sender,
+        recipientType,
+        recipient,
+        message,
+      });
+  
+      // Save the new contact request to the database
+      const savedContactRequest = await newContactRequest.save();
+  
+      // Respond with a success message
+      res.status(201).json(savedContactRequest);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // If an error occurs during submission, respond with an error message
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+app.get('/contactRequests',async(req,res)=>{
+    const requests = await ContactRequest.find();
+    return res.status(200).json(requests);
+})
+
+// Update contact request status
+app.put('/contactRequest/:id', async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    try {
+        // Find the contact request by ID
+        const contactRequest = await ContactRequest.findById(id);
+
+        if (!contactRequest) {
+            return res.status(404).json({ message: 'Contact request not found' });
+        }
+
+        // Update the status
+        contactRequest.status = status;
+        await contactRequest.save();
+
+        res.status(200).json({ message: 'Contact request status updated successfully' });
+    } catch (error) {
+        console.error('Error updating contact request status:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});

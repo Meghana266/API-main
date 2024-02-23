@@ -17,7 +17,7 @@ const agentSchema = new mongoose.Schema({
     languages: { type: String },
     linkedinUrl: { type: String },
     twitterUrl: { type: String },
-    isVerified: {
+    is_verified: {
         type: Boolean,
         default: false,
     },      
