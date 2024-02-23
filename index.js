@@ -65,7 +65,7 @@ app.get("/agents", async (req, res) => {
 app.get("/contacts", async (req, res) => {
     try {
         const contacts = await Contact.find();
-        const count = contacts.length; // Calculate the count
+        const count = contacts.length; 
         res.json({ contacts, count });
       } catch (error) {
         console.error("Error fetching contacts:", error);

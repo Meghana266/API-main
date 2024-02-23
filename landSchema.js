@@ -5,7 +5,7 @@ const Schema = mongoose.Schema;
 const landSchema = new Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User' // Assuming you have a User model
+        ref: 'User' 
     },
     title: { type: String, required: true },
     location: { type: String, required: true },
@@ -13,7 +13,7 @@ const landSchema = new Schema({
     area: { type: Number, required: true },
     description: { type: String, required: true },
     contactInfo: { type: String, required: true },
-    images: [{ type: String}] // Array of image paths
+    images: [{ type: String}] 
 });
 
 module.exports = mongoose.model('Land', landSchema);
