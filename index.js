@@ -144,7 +144,7 @@ app.post("/agents", async (req, res) => {
 app.post("/contacts", async (req, res) => {
     try {
         const { name, email, subject, message} = req.body;
-
+        console.log(name);
         const newContact = new Contact({
             name,
             email,
