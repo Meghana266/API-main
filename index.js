@@ -31,6 +31,8 @@ const House = require('./houseSchema');
 const Land = require('./landSchema');
 const WishlistHouse = require('./wishlistHouseSchema');
 const ContactRequest = require('./contactRequestSchema');
+const WishlistLand = require('./wishlistLandSchema');
+const wishlistHouseSchema = require("./wishlistHouseSchema");
 
 app.listen(5000, function () {
     console.log("server is running.....")
@@ -300,6 +302,32 @@ app.post('/wishlistHouse', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+app.get('/wishlistHouses',async(req,res)=>{
+    const houses = await WishlistHouse.find();
+    return res.status(200).json(houses);
+})
+
+app.post('/wishlistLand', async (req, res) => {
+    try {
+        const { userId, landId } = req.body;
+        console.log(landId);
+        // Create a new WishlistHouse document
+        const wishlistLand = new WishlistLand({ userId, landId });
+
+        await wishlistLand.save();
+
+        res.status(201).json({ message: 'WishlistLand created successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/wishlistLands',async(req,res)=>{
+    const lands = await WishlistLand.find();
+    return res.status(200).json(lands);
+})
 
 app.post('/contactRequest', async (req, res) => {
     try {

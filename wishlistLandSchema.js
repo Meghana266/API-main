@@ -1,18 +1,18 @@
 const mongoose = require('mongoose');
 
-const wishlistHouseSchema = new mongoose.Schema({
+const wishlistLandSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    houseId: {
+    landId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'House',
+        ref: 'Land',
         required: true
     }
 });
 
 
-module.exports  = mongoose.model('WishlistHouse', wishlistHouseSchema);
+module.exports  = mongoose.model('WishlistLand', wishlistLandSchema);
 
