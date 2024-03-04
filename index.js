@@ -382,3 +382,92 @@ app.put('/contactRequest/:id', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+   
+
+/*
+const Payment = require('./models/Payment'); // Import the Payment model
+
+app.post('/process-payment', async (req, res) => {
+    try {
+        // Retrieve payment data from the request body
+        const paymentData = req.body;
+
+        // Create a new payment document using the Payment model
+        const newPayment = new Payment({
+            name: paymentData.name,
+            cardNumber: paymentData.cardNumber,
+            expirationMonth: paymentData.expirationMonth,
+            expirationYear: paymentData.expirationYear,
+            securityCode: paymentData.securityCode
+        });
+
+        // Save the payment data to the database
+        await newPayment.save();
+
+        // Send a response indicating success
+        res.status(200).json({ message: 'Payment processed successfully' });
+    } catch (error) {
+        // If an error occurs, send a response indicating failure
+        console.error('Error processing payment:', error);
+        res.status(500).json({ message: 'Failed to process payment' });
+    }
+});
+
+*/
+
+// // // Define a schema for the payment data (if you haven't already done this elsewhere)
+
+// const paymentSchema = new mongoose.Schema({
+//     name: String,
+//     cardNumber: String,
+//     expirationMonth: String,
+//     expirationYear: String,
+//     securityCode: String
+// });
+
+// // Define a model based on the schema
+// const Payment = mongoose.model('payment', paymentSchema);
+
+// // POST route to handle payment processing
+// app.post('/process-payment', async (req, res) => {
+//     try {
+//         // Create a new payment document based on the received data
+//         const newPayment = new Payment(req.body);
+//         // Save the payment document to the database
+//         await newPayment.save();
+//         console.log('Payment data saved:', newPayment);
+//         // Send a success response
+//         res.status(200).json({ success: true });
+//     } catch (error) {
+//         console.error('Error saving payment data:', error);
+//         // Send an error response
+//         res.status(500).json({ success: false, error: 'Internal server error' });
+//     }
+// });
+
+
+
+
+
+
+// Route to handle payment processing
+app.post('/process-payment', async (req, res) => {
+    const formData = req.body;
+
+    // Perform validation - You should add more validation logic as per your requirements
+    if (!formData.name || !formData.cardNumber || !formData.expirationMonth || !formData.expirationYear || !formData.securityCode) {
+        return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    try {
+        // Create a new payment document
+        const payment = new Payment(formData);
+        console.log('Received payment data:', formData);
+        await payment.save();
+        
+        return res.json({ message: 'Payment successful!' });
+    } catch (error) {
+        console.error('Error saving payment:', error);
+        return res.status(500).json({ error: 'Payment failed. Please try again later.' });
+    }
+});
