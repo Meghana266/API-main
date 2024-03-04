@@ -9,7 +9,7 @@ const fs = require('fs');
 
 const app = express();
 
-mongoose.connect('mongodb://localhost:27017/api', { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect('mongodb://localhost:27017/api');
 
 const logsFolder = path.join(__dirname, 'logs');
 if (!fs.existsSync(logsFolder)) {
@@ -265,11 +265,6 @@ app.post('/lands', upload.array('images', 10), async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 8faf595e68744b636245b4075cffc4df158489a9
-
 // Delete a house
 app.post('/deleteHouse/:id', async (req, res) => {
     const { id } = req.params;
@@ -319,10 +314,6 @@ app.post('/wishlistHouse', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-<<<<<<< HEAD
-=======
-
->>>>>>> 8faf595e68744b636245b4075cffc4df158489a9
 
 app.get('/wishlistHouses',async(req,res)=>{
     const houses = await WishlistHouse.find();
@@ -427,8 +418,4 @@ app.post('/process-payment', async (req, res) => {
         // Send an error response
         res.status(500).json({ error: 'Payment failed. Please try again later.' });
     }
-<<<<<<< HEAD
 });
-=======
-});
->>>>>>> 8faf595e68744b636245b4075cffc4df158489a9
