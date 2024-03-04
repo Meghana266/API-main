@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-mongoose.connect("mongodb://127.0.0.1:27017/api");
 const express = require("express");
 const bodyParser = require('body-parser');
 const path = require("path");
@@ -9,6 +8,8 @@ const morgan = require('morgan');
 const fs = require('fs');
 
 const app = express();
+
+mongoose.connect('mongodb://localhost:27017/api', { useNewUrlParser: true, useUnifiedTopology: true });
 
 const logsFolder = path.join(__dirname, 'logs');
 if (!fs.existsSync(logsFolder)) {
@@ -21,9 +22,10 @@ app.use(morgan('combined', { stream: accessLogStream }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static('public'));
 
+// Import your models
 const User = require('./userSchema');
 const Agent = require('./agentSchema');
 const Contact = require('./contactSchema');
@@ -32,10 +34,10 @@ const Land = require('./landSchema');
 const WishlistHouse = require('./wishlistHouseSchema');
 const ContactRequest = require('./contactRequestSchema');
 const WishlistLand = require('./wishlistLandSchema');
-const wishlistHouseSchema = require("./wishlistHouseSchema");
+const Payment = require('./paymentSchema'); // Import the Payment model
 
 app.listen(5000, function () {
-    console.log("server is running.....")
+    console.log("server is running.....");
 });
 
 app.get('/image/:filename', (req, res) => {
@@ -74,6 +76,17 @@ app.get("/contacts", async (req, res) => {
         res.status(500).json({ error: "Internal Server Error" });
       }
 });
+
+app.get('/get-payments', async (req, res) => {
+    try {
+        const payments = await Payment.find(); // Assuming you have a Payment model
+        res.json({ payments });
+    } catch (error) {
+        console.error('Error fetching payments:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 
 app.post("/users", async (req, res) => {
     try {
@@ -252,7 +265,7 @@ app.post('/lands', upload.array('images', 10), async (req, res) => {
     }
 });
 
-<<<<<<< Updated upstream
+
 
 // Delete a house
 app.post('/deleteHouse/:id', async (req, res) => {
@@ -303,11 +316,7 @@ app.post('/wishlistHouse', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-<<<<<<< HEAD
-  
-=======
->>>>>>> Stashed changes
-=======
+
 
 app.get('/wishlistHouses',async(req,res)=>{
     const houses = await WishlistHouse.find();
@@ -388,75 +397,8 @@ app.put('/contactRequest/:id', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
-   
-
-/*
-const Payment = require('./models/Payment'); // Import the Payment model
-
-app.post('/process-payment', async (req, res) => {
-    try {
-        // Retrieve payment data from the request body
-        const paymentData = req.body;
-
-        // Create a new payment document using the Payment model
-        const newPayment = new Payment({
-            name: paymentData.name,
-            cardNumber: paymentData.cardNumber,
-            expirationMonth: paymentData.expirationMonth,
-            expirationYear: paymentData.expirationYear,
-            securityCode: paymentData.securityCode
-        });
-
-        // Save the payment data to the database
-        await newPayment.save();
-
-        // Send a response indicating success
-        res.status(200).json({ message: 'Payment processed successfully' });
-    } catch (error) {
-        // If an error occurs, send a response indicating failure
-        console.error('Error processing payment:', error);
-        res.status(500).json({ message: 'Failed to process payment' });
-    }
-});
-
-*/
-
-// // // Define a schema for the payment data (if you haven't already done this elsewhere)
-
-// const paymentSchema = new mongoose.Schema({
-//     name: String,
-//     cardNumber: String,
-//     expirationMonth: String,
-//     expirationYear: String,
-//     securityCode: String
-// });
-
-// // Define a model based on the schema
-// const Payment = mongoose.model('payment', paymentSchema);
-
-// // POST route to handle payment processing
-// app.post('/process-payment', async (req, res) => {
-//     try {
-//         // Create a new payment document based on the received data
-//         const newPayment = new Payment(req.body);
-//         // Save the payment document to the database
-//         await newPayment.save();
-//         console.log('Payment data saved:', newPayment);
-//         // Send a success response
-//         res.status(200).json({ success: true });
-//     } catch (error) {
-//         console.error('Error saving payment data:', error);
-//         // Send an error response
-//         res.status(500).json({ success: false, error: 'Internal server error' });
-//     }
-// });
 
 
-
-
-
-
-// Route to handle payment processing
 app.post('/process-payment', async (req, res) => {
     const formData = req.body;
 
@@ -466,15 +408,17 @@ app.post('/process-payment', async (req, res) => {
     }
 
     try {
-        // Create a new payment document
-        const payment = new Payment(formData);
-        console.log('Received payment data:', formData);
-        await payment.save();
-        
-        return res.json({ message: 'Payment successful!' });
+        // Create a new payment document using the Payment model
+        const newPayment = new Payment(formData);
+
+        // Save the payment data to the database
+        await newPayment.save();
+
+        // Send a success response
+        res.status(200).json({ message: 'Payment processed successfully' });
     } catch (error) {
-        console.error('Error saving payment:', error);
-        return res.status(500).json({ error: 'Payment failed. Please try again later.' });
+        console.error('Error processing payment:', error);
+        // Send an error response
+        res.status(500).json({ error: 'Payment failed. Please try again later.' });
     }
 });
->>>>>>> 7c4c4023e633723bd162fdf1e76cac21151590a9
