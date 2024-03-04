@@ -30,7 +30,9 @@ const Contact = require('./contactSchema');
 const House = require('./houseSchema');
 const Land = require('./landSchema');
 const WishlistHouse = require('./wishlistHouseSchema');
-
+const ContactRequest = require('./contactRequestSchema');
+const WishlistLand = require('./wishlistLandSchema');
+const wishlistHouseSchema = require("./wishlistHouseSchema");
 
 app.listen(5000, function () {
     console.log("server is running.....")
@@ -97,40 +99,14 @@ app.post("/users", async (req, res) => {
     }
 });
 
-// Secret key for JWT
-const JWT_SECRET_KEY = 'DreamHome';
-
-app.post("/login", async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        // Find the user by email and password (You need to implement this logic)
-        const user = await User.findOne({ email, password });
-
-        if (!user) {
-            return res.status(401).json({ error: "Invalid email or password" });
-        }
-
-        // Generate JWT token with user ID as payload
-        const token = jwt.sign({ userId: user._id }, JWT_SECRET_KEY);
-
-        // Send the token in the response
-        res.status(200).json({ token });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Internal server error" });
-    }
-});
-
-// ... (other imports)
 
 app.put("/agents/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        const { isVerified } = req.body;
+        const { is_verified } = req.body;
 
         // Update the agent's isVerified field based on the provided ID
-        await Agent.findByIdAndUpdate(id, { $set: { isVerified } });
+        await Agent.findByIdAndUpdate(id, { $set: { is_verified } });
 
         res.status(200).json({ message: 'Agent updated successfully' });
     } catch (error) {
@@ -168,7 +144,7 @@ app.post("/agents", async (req, res) => {
 app.post("/contacts", async (req, res) => {
     try {
         const { name, email, subject, message} = req.body;
-
+        console.log(name);
         const newContact = new Contact({
             name,
             email,
@@ -327,6 +303,178 @@ app.post('/wishlistHouse', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+<<<<<<< HEAD
   
 =======
 >>>>>>> Stashed changes
+=======
+
+app.get('/wishlistHouses',async(req,res)=>{
+    const houses = await WishlistHouse.find();
+    return res.status(200).json(houses);
+})
+
+app.post('/wishlistLand', async (req, res) => {
+    try {
+        const { userId, landId } = req.body;
+        console.log(landId);
+        // Create a new WishlistHouse document
+        const wishlistLand = new WishlistLand({ userId, landId });
+
+        await wishlistLand.save();
+
+        res.status(201).json({ message: 'WishlistLand created successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/wishlistLands',async(req,res)=>{
+    const lands = await WishlistLand.find();
+    return res.status(200).json(lands);
+})
+
+app.post('/contactRequest', async (req, res) => {
+    try {
+      // Destructure the required fields from the request body
+      const { sender, recipientType, recipient, message } = req.body;
+  
+      // Create a new contact request document
+      const newContactRequest = new ContactRequest({
+        sender,
+        recipientType,
+        recipient,
+        message,
+      });
+  
+      // Save the new contact request to the database
+      const savedContactRequest = await newContactRequest.save();
+  
+      // Respond with a success message
+      res.status(201).json(savedContactRequest);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // If an error occurs during submission, respond with an error message
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+app.get('/contactRequests',async(req,res)=>{
+    const requests = await ContactRequest.find();
+    return res.status(200).json(requests);
+})
+
+// Update contact request status
+app.put('/contactRequest/:id', async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    try {
+        // Find the contact request by ID
+        const contactRequest = await ContactRequest.findById(id);
+
+        if (!contactRequest) {
+            return res.status(404).json({ message: 'Contact request not found' });
+        }
+
+        // Update the status
+        contactRequest.status = status;
+        await contactRequest.save();
+
+        res.status(200).json({ message: 'Contact request status updated successfully' });
+    } catch (error) {
+        console.error('Error updating contact request status:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+   
+
+/*
+const Payment = require('./models/Payment'); // Import the Payment model
+
+app.post('/process-payment', async (req, res) => {
+    try {
+        // Retrieve payment data from the request body
+        const paymentData = req.body;
+
+        // Create a new payment document using the Payment model
+        const newPayment = new Payment({
+            name: paymentData.name,
+            cardNumber: paymentData.cardNumber,
+            expirationMonth: paymentData.expirationMonth,
+            expirationYear: paymentData.expirationYear,
+            securityCode: paymentData.securityCode
+        });
+
+        // Save the payment data to the database
+        await newPayment.save();
+
+        // Send a response indicating success
+        res.status(200).json({ message: 'Payment processed successfully' });
+    } catch (error) {
+        // If an error occurs, send a response indicating failure
+        console.error('Error processing payment:', error);
+        res.status(500).json({ message: 'Failed to process payment' });
+    }
+});
+
+*/
+
+// // // Define a schema for the payment data (if you haven't already done this elsewhere)
+
+// const paymentSchema = new mongoose.Schema({
+//     name: String,
+//     cardNumber: String,
+//     expirationMonth: String,
+//     expirationYear: String,
+//     securityCode: String
+// });
+
+// // Define a model based on the schema
+// const Payment = mongoose.model('payment', paymentSchema);
+
+// // POST route to handle payment processing
+// app.post('/process-payment', async (req, res) => {
+//     try {
+//         // Create a new payment document based on the received data
+//         const newPayment = new Payment(req.body);
+//         // Save the payment document to the database
+//         await newPayment.save();
+//         console.log('Payment data saved:', newPayment);
+//         // Send a success response
+//         res.status(200).json({ success: true });
+//     } catch (error) {
+//         console.error('Error saving payment data:', error);
+//         // Send an error response
+//         res.status(500).json({ success: false, error: 'Internal server error' });
+//     }
+// });
+
+
+
+
+
+
+// Route to handle payment processing
+app.post('/process-payment', async (req, res) => {
+    const formData = req.body;
+
+    // Perform validation - You should add more validation logic as per your requirements
+    if (!formData.name || !formData.cardNumber || !formData.expirationMonth || !formData.expirationYear || !formData.securityCode) {
+        return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    try {
+        // Create a new payment document
+        const payment = new Payment(formData);
+        console.log('Received payment data:', formData);
+        await payment.save();
+        
+        return res.json({ message: 'Payment successful!' });
+    } catch (error) {
+        console.error('Error saving payment:', error);
+        return res.status(500).json({ error: 'Payment failed. Please try again later.' });
+    }
+});
+>>>>>>> 7c4c4023e633723bd162fdf1e76cac21151590a9
