@@ -252,7 +252,6 @@ app.post('/lands', upload.array('images', 10), async (req, res) => {
     }
 });
 
-<<<<<<< Updated upstream
 
 // Delete a house
 app.post('/deleteHouse/:id', async (req, res) => {
@@ -303,11 +302,6 @@ app.post('/wishlistHouse', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-<<<<<<< HEAD
-  
-=======
->>>>>>> Stashed changes
-=======
 
 app.get('/wishlistHouses',async(req,res)=>{
     const houses = await WishlistHouse.find();
@@ -477,4 +471,3 @@ app.post('/process-payment', async (req, res) => {
         return res.status(500).json({ error: 'Payment failed. Please try again later.' });
     }
 });
->>>>>>> 7c4c4023e633723bd162fdf1e76cac21151590a9
