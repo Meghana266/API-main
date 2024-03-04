@@ -276,6 +276,7 @@ app.post('/lands', upload.array('images', 10), async (req, res) => {
     }
 });
 
+<<<<<<< Updated upstream
 
 // Delete a house
 app.post('/deleteHouse/:id', async (req, res) => {
@@ -327,3 +328,5 @@ app.post('/wishlistHouse', async (req, res) => {
     }
 });
   
+=======
+>>>>>>> Stashed changes
