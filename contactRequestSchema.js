@@ -9,7 +9,7 @@ const contactRequestSchema = new mongoose.Schema({
     },
     recipientType: {
         type: String,
-        enum: ['User', 'Agent'], // Possible values for recipient type
+        enum: ['User', 'Agent','Admin'], // Possible values for recipient type
         required: true
     },
     recipient: {
