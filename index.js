@@ -120,10 +120,8 @@ app.put('/agents/profile/:userId', async (req, res) => {
         const updatedProfile = await Agent.findByIdAndUpdate(userId, formData, { new: true });
 
         if (!updatedProfile) {
-            console.log("not found");
             return res.status(404).json({ error: 'Agent profile not found' });
         }
-        console.log(updatedProfile);
         return res.status(200).json({ message: 'Agent profile updated successfully', updatedProfile });
     } catch (error) {
         console.error('Error updating agent profile:', error);
