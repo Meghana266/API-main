@@ -9,6 +9,10 @@ const fs = require('fs');
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 
+// Redis setup
+const redis = require("redis");
+const redisclient = redis.createClient();
+
 const app = express();
 
 mongoose.connect('mongodb://localhost:27017/api');
@@ -26,8 +30,6 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
-
-// Import your models
 
 // Import routers
 const userRouter = require('./userRouter');
@@ -57,12 +59,51 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
+// Function to fetch Swagger documentation (replace this with your actual function)
+async function fetchSwaggerDocs() {
+    // Example function to fetch Swagger documentation
+    return 'Swagger documentation content';
+}
+
 // Use routers
 app.use('/', userRouter);
 app.use('/', agentRouter);
 app.use('/', propertyRouter);
 app.use('/', contactRouter);
 
+console.log("Connecting to Redis");
+
+(async () => {
+    await redisclient.connect();
+})();
+
+redisclient.on("ready", () => {
+    console.log("Connected to Redis!");
+});
+
+redisclient.on("error", (err) => {
+    console.log("Error in the Redis Connection:", err);
+});
+
+app.get('/api-docs', async (req, res) => {
+    const cacheKey = 'swagger-docs';
+    try {
+        const cachedData = await redisclient.get(cacheKey);
+        if (cachedData) {
+            console.log('Retrieving Swagger docs from cache');
+            res.send(cachedData);
+        } else {
+            console.log('Fetching Swagger docs');
+            const swaggerDocs = await fetchSwaggerDocs();
+            await redisclient.set(cacheKey, swaggerDocs);
+            res.send(swaggerDocs);
+        }
+    } catch (error) {
+        console.error('Error retrieving cached data:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+ 
 /**
  * @swagger
  * /api-docs:
@@ -91,6 +132,6 @@ app.use('/', contactRouter);
  *         description: File not found
  */
 
-app.listen(5000, function () {
-    console.log("server is running.....");
-});
+app.listen(5000, async function () {
+    console.log("Server is running on port 5000");
+}); 

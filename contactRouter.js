@@ -1,10 +1,16 @@
 const express = require("express");
 const router = express.Router();
+const redis = require("redis");
+const redisclient = redis.createClient();
 
 // Import your models
 const Contact = require('./contactSchema');
 const ContactRequest = require('./contactRequestSchema');
 const Payment = require('./paymentSchema'); 
+
+(async () => {
+    await redisclient.connect();
+})();
 
 /**
  * @swagger
@@ -28,7 +34,36 @@ const Payment = require('./paymentSchema');
  *                   type: number
  *       500:
  *         description: Internal server error
- * 
+ */
+
+router.get("/contacts", async (req, res) => {
+    try {
+        const cacheKey = 'all-contacts';
+        const cachedData = await redisclient.get(cacheKey);
+
+            if (cachedData) {
+                console.log('Retrieving contacts from cache');
+                res.send(JSON.parse(cachedData)); // Parse cached data before sending
+            } else {
+                console.log('Fetching contacts from database');
+                // Fetch contacts from the database
+                const contacts = await Contact.find();
+                const count = contacts.length;
+                const contactsData = { contacts, count };
+                
+                // Cache the fetched contacts data
+                await redisclient.set(cacheKey, JSON.stringify(contactsData)); // Stringify data before caching
+                res.status(200).json(contactsData);
+            }
+    } catch (error) {
+        console.error("Error fetching contacts:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+/**
+ * @swagger
+ * /contacts:
  *   post:
  *     summary: Create a new contact
  *     description: Create a new contact with the provided details.
@@ -59,20 +94,9 @@ const Payment = require('./paymentSchema');
  *         description: Internal Server Error
  */
 
-router.get("/contacts", async (req, res) => {
-    try {
-        const contacts = await Contact.find();
-        const count = contacts.length; 
-        res.json({ contacts, count });
-    } catch (error) {
-        console.error("Error fetching contacts:", error);
-        res.status(500).json({ error: "Internal Server Error" });
-    }
-});
-
 router.post("/contacts", async (req, res) => {
     try {
-        const { name, email, subject, message} = req.body;
+        const { name, email, subject, message } = req.body;
         const newContact = new Contact({
             name,
             email,
@@ -81,12 +105,19 @@ router.post("/contacts", async (req, res) => {
         });
 
         const savedContact = await newContact.save();
+
+        // Clear the contacts cache to ensure the latest data is fetched on the next request
+        const cacheKey = 'all-contacts';
+        
+        await redisclient.del(cacheKey);
+
         return res.status(201).json(savedContact);
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });
+
 
 /**
  * @swagger
@@ -137,6 +168,11 @@ router.post('/contactRequest', async (req, res) => {
         // Save the new contact request to the database
         const savedContactRequest = await newContactRequest.save();
 
+        // Clear the contact requests cache to ensure the latest data is fetched on the next request
+        const cacheKey = 'all-contact-requests';
+        
+        await redisclient.del(cacheKey);
+
         // Respond with a success message
         res.status(201).json(savedContactRequest);
     } catch (error) {
@@ -165,10 +201,31 @@ router.post('/contactRequest', async (req, res) => {
  *         description: Internal server error
  */
 
-router.get('/contactRequests',async(req,res)=>{
-    const requests = await ContactRequest.find();
-    return res.status(200).json(requests);
+router.get('/contactRequests', async (req, res) => {
+    try {
+        const cacheKey = 'all-contact-requests';
+        
+        const cachedData = await redisclient.get(cacheKey);
+
+            if (cachedData) {
+                console.log('Retrieving contact requests from cache');
+                // If data exists in cache, return it
+                res.status(200).json(JSON.parse(cachedData));
+            } else {
+                console.log('Fetching contact requests from database');
+                // If data doesn't exist in cache, fetch it from the database
+                const requests = await ContactRequest.find();
+                await redisclient.set(cacheKey,JSON.stringify(requests));
+                // Return the fetched data
+                res.status(200).json(requests);
+            }
+    } catch (error) {
+        console.error('Error fetching contact requests:', error);
+        // If an error occurs during fetching, respond with an error message
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
+
 
 /**
  * @swagger
@@ -208,18 +265,17 @@ router.put('/contactRequest/:id', async (req, res) => {
     const { status } = req.body;
 
     try {
-        // Find the contact request by ID
-        const contactRequest = await ContactRequest.findById(id);
+        const contactRequest = await ContactRequest.findByIdAndUpdate(id, { status }, { new: true });
 
         if (!contactRequest) {
             return res.status(404).json({ message: 'Contact request not found' });
         }
 
-        // Update the status
-        contactRequest.status = status;
-        await contactRequest.save();
+        // Invalidate the cached data for contact requests
+        const cacheKey = 'all-contact-requests';
+        await redisclient.del(cacheKey);
 
-        res.status(200).json({ message: 'Contact request status updated successfully' });
+        res.status(200).json({ message: 'Contact request status updated successfully', contactRequest });
     } catch (error) {
         console.error('Error updating contact request status:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -273,13 +329,13 @@ router.post('/process-payment', async (req, res) => {
     }
 
     try {
-        // Create a new payment document using the Payment model
         const newPayment = new Payment(formData);
-
-        // Save the payment data to the database
         await newPayment.save();
 
-        // Send a success response
+        // Invalidate the cached data for payments
+        const cacheKey = 'all-payments';
+        await redisclient.del(cacheKey);
+
         res.status(200).json({ message: 'Payment processed successfully' });
     } catch (error) {
         console.error('Error processing payment:', error);

@@ -1,8 +1,13 @@
 const express = require("express");
 const router = express.Router();
+const redis = require("redis");
+const redisclient = redis.createClient();
 
-// Import your models
 const User = require('./userSchema');
+
+(async () => {
+    await redisclient.connect();
+})();
 
 /**
  * @swagger
@@ -21,7 +26,30 @@ const User = require('./userSchema');
  *                 $ref: '#/components/schemas/User'
  *       500:
  *         description: Internal server error
- * 
+ */
+
+router.get("/users", async (req, res) => {
+    try {
+        const cacheKey = 'all-users';
+        const cachedData = await redisclient.get(cacheKey);
+        if (cachedData) {
+            console.log('Retrieving users from cache');
+            res.send(JSON.parse(cachedData)); // Parse cached data since it's stored as a string
+        } else {
+            console.log('Fetching users from database');
+            const users = await User.find();
+            await redisclient.set(cacheKey, JSON.stringify(users)); // Store users data as string in cache
+            res.status(200).json(users);
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+/**
+ * @swagger
+ * /users:
  *   post:
  *     summary: Create a new user
  *     description: Create a new user with the provided details.
@@ -57,20 +85,9 @@ const User = require('./userSchema');
  *       500:
  *         description: Internal server error
  */
-
-router.get("/users", async (req, res) => {
-    try {
-        const users = await User.find();
-        return res.status(200).json(users);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Internal server error" });
-    }
-});
-
 router.post("/users", async (req, res) => {
     try {
-        const { name, email, mobile, password} = req.body;
+        const { name, email, mobile, password } = req.body;
 
         const duplicateUser = await User.findOne({ $or: [{ email }, { mobile }] });
         if (duplicateUser) {
@@ -85,12 +102,13 @@ router.post("/users", async (req, res) => {
         });
 
         const savedUser = await newUser.save();
+        const cacheKey = 'all-users';
+        await redisclient.del(cacheKey);
         return res.status(201).json(savedUser);
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });
-
 
 module.exports = router;

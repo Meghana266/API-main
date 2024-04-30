@@ -1,8 +1,13 @@
 const express = require("express");
 const router = express.Router();
+const redis = require("redis");
+const redisclient = redis.createClient();
 
-// Import your models
 const Agent = require('./agentSchema');
+
+(async () => {
+    await redisclient.connect();
+})();
 
 /**
  * @swagger
@@ -42,9 +47,19 @@ const Agent = require('./agentSchema');
 
 router.get("/agents", async (req, res) => {
     try {
-        const agents = await Agent.find();
-        return res.status(200).json(agents);
-    } catch (error) {
+        const cacheKey = 'all-agents';
+        const cachedData = await redisclient.get(cacheKey);
+            if (cachedData) {
+                console.log('Retrieving agents from cache');
+                res.send(JSON.parse(cachedData));
+            } else {
+                console.log('Fetching agents from database');
+                const agents = await Agent.find();
+                await redisclient.set(cacheKey, JSON.stringify(agents));
+                res.status(200).json(agents);
+            }
+    }
+    catch (error) {
         console.error("Error fetching agents:", error);
         return res.status(500).json({ error: "Internal Server Error" });
     }
@@ -69,6 +84,12 @@ router.post("/agents", async (req, res) => {
         });
 
         const savedAgent = await newAgent.save();
+        
+        // Clear cache for agents since data is updated
+        const cacheKey = 'all-agents';
+        
+        await redisclient.del(cacheKey);
+
         return res.status(201).json(savedAgent);
     } catch (error) {
         console.error(error);
@@ -134,6 +155,12 @@ router.put('/agents/profile/:userId', async (req, res) => {
         if (!updatedProfile) {
             return res.status(404).json({ error: 'Agent profile not found' });
         }
+
+        // Clear cache for agents since data is updated
+        const cacheKey = 'all-agents';
+        
+        await redisclient.del(cacheKey);
+
         return res.status(200).json({ message: 'Agent profile updated successfully', updatedProfile });
     } catch (error) {
         console.error('Error updating agent profile:', error);
@@ -179,7 +206,10 @@ router.put("/agents/:id", async (req, res) => {
 
         // Update the agent's isVerified field based on the provided ID
         await Agent.findByIdAndUpdate(id, { $set: { is_verified } });
-
+        // Clear cache for agents since data is updated
+        const cacheKey = 'all-agents';
+        
+        await redisclient.del(cacheKey);
         res.status(200).json({ message: 'Agent updated successfully' });
     } catch (error) {
         console.error('Error:', error);

@@ -1,13 +1,19 @@
 const express = require("express");
 const router = express.Router();
-const path = require("path"); // Add path module
-const multer = require('multer'); // Add multer module
+const path = require("path");
+const multer = require('multer');
+const redis = require("redis");
+const redisclient = redis.createClient();
+
+(async () => {
+    await redisclient.connect();
+})();
 
 // Import your models
 const House = require('./houseSchema');
 const Land = require('./landSchema');
-const WishlistHouse = require('./wishlistHouseSchema'); // Require WishlistHouse model
-const WishlistLand = require('./wishlistLandSchema'); // Require WishlistLand model
+const WishlistHouse = require('./wishlistHouseSchema');
+const WishlistLand = require('./wishlistLandSchema');
 
 /**
  * @swagger
@@ -108,31 +114,39 @@ router.get('/image/:filename', (req, res) => {
 
 router.get("/houses", async (req, res) => {
     try {
-        const houses = await House.find();
-        return res.status(200).json(houses);
+        const cacheKey = 'all-houses';
+        const cachedData = await redisclient.get(cacheKey);
+            if (cachedData) {
+                console.log('Retrieving houses from cache');
+                res.send(JSON.parse(cachedData));
+            } else {
+                console.log('Fetching houses from database');
+                const houses = await House.find();
+                await redisclient.set(cacheKey, JSON.stringify(houses));
+                res.status(200).json(houses);
+            }
+
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Internal server error" });
     }
 });
 
-// Multer storage configuration
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, './uploads') // Destination folder for uploaded images
+        cb(null, './uploads');
     },
     filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname); // Unique filename for each uploaded image
+        cb(null, Date.now() + '-' + file.originalname);
     }
 });
 
-// Multer file upload configuration
 const upload = multer({ storage: storage });
 
 router.post('/houses', upload.array('images', 10), async (req, res) => {
     try {
         const {
-            userId, // Add userId to the destructured request body
+            userId,
             title,
             location,
             price,
@@ -144,11 +158,10 @@ router.post('/houses', upload.array('images', 10), async (req, res) => {
             contactInfo
         } = req.body;
 
-        const images = req.files.map(file => file.path); // Get paths of uploaded images
+        const images = req.files.map(file => file.path);
 
-        // Create a new house object
         const newHouse = new House({
-            userId, // Include userId in the new house object
+            userId,
             title,
             location,
             price,
@@ -161,8 +174,11 @@ router.post('/houses', upload.array('images', 10), async (req, res) => {
             images
         });
       
-        // Save the new house object to the database
         await newHouse.save();
+
+        // Clear cache for houses since data is updated
+        const cacheKey = 'all-houses';
+        await redisclient.del(cacheKey);
 
         res.status(201).json({ message: 'House posted successfully' });
     } catch (error) {
@@ -170,6 +186,7 @@ router.post('/houses', upload.array('images', 10), async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
 
 /**
  * @swagger
@@ -235,9 +252,20 @@ router.post('/houses', upload.array('images', 10), async (req, res) => {
 
 router.get("/lands", async (req, res) => {
     try {
-        const lands = await Land.find();
-        return res.status(200).json(lands);
-    } catch (error) {
+        const cacheKey = 'all-lands';
+        const cachedData = await redisclient.get(cacheKey);
+        
+            if (cachedData) {
+                console.log('Retrieving lands from cache');
+                res.send(JSON.parse(cachedData));
+            } else {
+                console.log('Fetching lands from database');
+                const lands = await Land.find();
+                await redisclient.set(cacheKey, JSON.stringify(lands));
+                res.status(200).json(lands);
+            }
+    }
+    catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Internal server error" });
     }
@@ -246,7 +274,7 @@ router.get("/lands", async (req, res) => {
 router.post('/lands', upload.array('images', 10), async (req, res) => {
     try {
         const {
-            userId, // Add userId to the destructured request body
+            userId,
             title,
             location,
             price,
@@ -255,11 +283,10 @@ router.post('/lands', upload.array('images', 10), async (req, res) => {
             contactInfo
         } = req.body;
 
-        const images = req.files.map(file => file.path); // Get paths of uploaded images
+        const images = req.files.map(file => file.path);
 
-        // Create a new land object
         const newLand = new Land({
-            userId, // Include userId in the new land object
+            userId,
             title,
             location,
             price,
@@ -269,15 +296,18 @@ router.post('/lands', upload.array('images', 10), async (req, res) => {
             images
         });
 
-        // Save the new land object to the database
         await newLand.save();
 
+        // Clear cache for lands since data is updated
+        const cacheKey = 'all-lands';
+        await redisclient.del(cacheKey);
         res.status(201).json({ message: 'Land posted successfully' });
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
 
 /**
  * @swagger
@@ -301,18 +331,20 @@ router.post('/lands', upload.array('images', 10), async (req, res) => {
 
 router.post('/deleteHouse/:id', async (req, res) => {
     const { id } = req.params;
-    try {
-      // Delete the house based on the provided ID
-      await House.findByIdAndDelete(id);
   
-      // Respond with a success message
-      res.status(200).json({ message: 'House deleted successfully' });
+    try {
+        await House.findByIdAndDelete(id);
+        
+        // Clear cache for houses since data is updated
+        const cacheKey = 'all-houses';
+        await redisclient.del(cacheKey);
+        res.status(200).json({ message: 'House deleted successfully' });
     } catch (error) {
-      // If an error occurs during deletion, respond with an error message
-      console.error('Error:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
+        console.error('Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
 
 /**
  * @swagger
@@ -336,21 +368,20 @@ router.post('/deleteHouse/:id', async (req, res) => {
 
 router.post('/deleteLand/:id', async (req, res) => {
     const { id } = req.params;
-  
+
     try {
-      // Delete the land based on the provided ID
-      await Land.findByIdAndDelete(id);
-  
-      // Respond with a success message
-      res.status(200).json({ message: 'Land deleted successfully' });
+        await Land.findByIdAndDelete(id);
+        
+        // Clear cache for lands since data is updated
+        const cacheKey = 'all-lands';
+        await redisclient.del(cacheKey);
+
+        res.status(200).json({ message: 'Land deleted successfully' });
     } catch (error) {
-      // If an error occurs during deletion, respond with an error message
-      console.error('Error:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
+        console.error('Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
-  });
- 
-  
+});
 /**
  * @swagger
  * /wishlistHouse:
@@ -381,18 +412,20 @@ router.post('/deleteLand/:id', async (req, res) => {
 router.post('/wishlistHouse', async (req, res) => {
     try {
         const { userId, houseId } = req.body;
-        // Create a new WishlistHouse document
         const wishlistHouse = new WishlistHouse({ userId, houseId });
-
-        // Save the new WishlistHouse document
         await wishlistHouse.save();
-
+        
+        // Clear cache for wishlist houses since the data is updated
+        const cacheKey = 'wishlist-houses';
+        await redisclient.del(cacheKey);
+        
         res.status(201).json({ message: 'WishlistHouse created successfully' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
 
 /**
  * @swagger
@@ -413,10 +446,27 @@ router.post('/wishlistHouse', async (req, res) => {
  *         description: Internal server error
  */
 
-router.get('/wishlistHouses',async(req,res)=>{
-    const houses = await WishlistHouse.find();
-    return res.status(200).json(houses);
-})
+router.get('/wishlistHouses', async (req, res) => {
+    try {
+        const cacheKey = 'wishlist-houses';
+        
+        const cachedData = await redisclient.get(cacheKey);
+
+            if (cachedData) {
+                console.log('Retrieving wishlist houses from cache');
+                res.send(JSON.parse(cachedData));
+            } else {
+                console.log('Fetching wishlist houses from database');
+                const houses = await WishlistHouse.find();
+                await redisclient.set(cacheKey, JSON.stringify(houses));
+                res.status(200).json(houses);
+            }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 
 /**
  * @swagger
@@ -448,18 +498,20 @@ router.get('/wishlistHouses',async(req,res)=>{
 router.post('/wishlistLand', async (req, res) => {
     try {
         const { userId, landId } = req.body;
-        console.log(landId);
-        // Create a new WishlistHouse document
         const wishlistLand = new WishlistLand({ userId, landId });
-
         await wishlistLand.save();
-
+        
+        // Clear cache for wishlist lands since the data is updated
+        const cacheKey = 'wishlist-lands';
+        await redisclient.del(cacheKey);
+        
         res.status(201).json({ message: 'WishlistLand created successfully' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
 
 /**
  * @swagger
@@ -480,9 +532,26 @@ router.post('/wishlistLand', async (req, res) => {
  *         description: Internal server error
  */
 
-router.get('/wishlistLands',async(req,res)=>{
-    const lands = await WishlistLand.find();
-    return res.status(200).json(lands);
-})
+router.get('/wishlistLands', async (req, res) => {
+    try {
+        const cacheKey = 'wishlist-lands';
+        
+        const cachedData = await redisclient.get(cacheKey);
+
+            if (cachedData) {
+                console.log('Retrieving wishlist lands from cache');
+                res.send(JSON.parse(cachedData));
+            } else {
+                console.log('Fetching wishlist lands from database');
+                const lands = await WishlistLand.find();
+                await redisclient.set(cacheKey, JSON.stringify(lands));
+                res.status(200).json(lands);
+            }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 
 module.exports = router;
