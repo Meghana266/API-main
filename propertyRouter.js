@@ -2,12 +2,15 @@ const express = require("express");
 const router = express.Router();
 const path = require("path");
 const multer = require('multer');
-const redis = require("redis");
-const redisclient = redis.createClient();
 
-(async () => {
-    await redisclient.connect();
-})();
+// Redis setup
+const { Redis } = require('@upstash/redis');
+
+const redisclient = new Redis({
+  url: 'https://definite-ocelot-48067.upstash.io',
+  token: 'AbvDAAIncDEwMTgwYzIwZDk0N2Q0MDM1OWZmN2JiYTc2ODYyMTI2YXAxNDgwNjc',
+})
+
 
 // Import your models
 const House = require('./houseSchema');
@@ -118,7 +121,7 @@ router.get("/houses", async (req, res) => {
         const cachedData = await redisclient.get(cacheKey);
             if (cachedData) {
                 console.log('Retrieving houses from cache');
-                res.send(JSON.parse(cachedData));
+                res.send(cachedData);
             } else {
                 console.log('Fetching houses from database');
                 const houses = await House.find();
@@ -257,7 +260,7 @@ router.get("/lands", async (req, res) => {
         
             if (cachedData) {
                 console.log('Retrieving lands from cache');
-                res.send(JSON.parse(cachedData));
+                res.send(cachedData);
             } else {
                 console.log('Fetching lands from database');
                 const lands = await Land.find();
@@ -454,7 +457,7 @@ router.get('/wishlistHouses', async (req, res) => {
 
             if (cachedData) {
                 console.log('Retrieving wishlist houses from cache');
-                res.send(JSON.parse(cachedData));
+                res.send(cachedData);
             } else {
                 console.log('Fetching wishlist houses from database');
                 const houses = await WishlistHouse.find();
@@ -540,7 +543,7 @@ router.get('/wishlistLands', async (req, res) => {
 
             if (cachedData) {
                 console.log('Retrieving wishlist lands from cache');
-                res.send(JSON.parse(cachedData));
+                res.send(cachedData);
             } else {
                 console.log('Fetching wishlist lands from database');
                 const lands = await WishlistLand.find();

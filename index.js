@@ -6,12 +6,17 @@ const cors = require('cors');
 const morgan = require('morgan');
 const fs = require('fs');
 
+// Redis setup
+const { Redis } = require('@upstash/redis');
+
+const redisclient = new Redis({
+  url: 'https://definite-ocelot-48067.upstash.io',
+  token: 'AbvDAAIncDEwMTgwYzIwZDk0N2Q0MDM1OWZmN2JiYTc2ODYyMTI2YXAxNDgwNjc',
+})
+
+
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
-
-// Redis setup
-const redis = require("redis");
-const redisclient = redis.createClient();
 
 const app = express();
 
@@ -72,18 +77,6 @@ app.use('/', propertyRouter);
 app.use('/', contactRouter);
 
 console.log("Connecting to Redis");
-
-(async () => {
-    await redisclient.connect();
-})();
-
-redisclient.on("ready", () => {
-    console.log("Connected to Redis!");
-});
-
-redisclient.on("error", (err) => {
-    console.log("Error in the Redis Connection:", err);
-});
 
 app.get('/api-docs', async (req, res) => {
     const cacheKey = 'swagger-docs';

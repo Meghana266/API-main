@@ -1,13 +1,14 @@
 const express = require("express");
 const router = express.Router();
-const redis = require("redis");
-const redisclient = redis.createClient();
+// Redis setup
+const { Redis } = require('@upstash/redis');
+
+const redisclient = new Redis({
+  url: 'https://definite-ocelot-48067.upstash.io',
+  token: 'AbvDAAIncDEwMTgwYzIwZDk0N2Q0MDM1OWZmN2JiYTc2ODYyMTI2YXAxNDgwNjc',
+})
 
 const Agent = require('./agentSchema');
-
-(async () => {
-    await redisclient.connect();
-})();
 
 /**
  * @swagger
@@ -51,7 +52,7 @@ router.get("/agents", async (req, res) => {
         const cachedData = await redisclient.get(cacheKey);
             if (cachedData) {
                 console.log('Retrieving agents from cache');
-                res.send(JSON.parse(cachedData));
+                res.send(cachedData);
             } else {
                 console.log('Fetching agents from database');
                 const agents = await Agent.find();

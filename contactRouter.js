@@ -1,16 +1,18 @@
 const express = require("express");
 const router = express.Router();
-const redis = require("redis");
-const redisclient = redis.createClient();
+
+// Redis setup
+const { Redis } = require('@upstash/redis');
+
+const redisclient = new Redis({
+  url: 'https://definite-ocelot-48067.upstash.io',
+  token: 'AbvDAAIncDEwMTgwYzIwZDk0N2Q0MDM1OWZmN2JiYTc2ODYyMTI2YXAxNDgwNjc',
+})
 
 // Import your models
 const Contact = require('./contactSchema');
 const ContactRequest = require('./contactRequestSchema');
 const Payment = require('./paymentSchema'); 
-
-(async () => {
-    await redisclient.connect();
-})();
 
 /**
  * @swagger
@@ -43,7 +45,7 @@ router.get("/contacts", async (req, res) => {
 
             if (cachedData) {
                 console.log('Retrieving contacts from cache');
-                res.send(JSON.parse(cachedData)); // Parse cached data before sending
+                res.send(cachedData); // Parse cached data before sending
             } else {
                 console.log('Fetching contacts from database');
                 // Fetch contacts from the database
@@ -106,7 +108,6 @@ router.post("/contacts", async (req, res) => {
 
         const savedContact = await newContact.save();
 
-        // Clear the contacts cache to ensure the latest data is fetched on the next request
         const cacheKey = 'all-contacts';
         
         await redisclient.del(cacheKey);
@@ -210,7 +211,7 @@ router.get('/contactRequests', async (req, res) => {
             if (cachedData) {
                 console.log('Retrieving contact requests from cache');
                 // If data exists in cache, return it
-                res.status(200).json(JSON.parse(cachedData));
+                res.status(200).json(cachedData);
             } else {
                 console.log('Fetching contact requests from database');
                 // If data doesn't exist in cache, fetch it from the database
