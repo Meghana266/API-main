@@ -20,7 +20,7 @@ const swaggerUi = require("swagger-ui-express");
 
 const app = express();
 
-mongoose.connect('mongodb+srv://magantimeghana10:jHQNz0UpqEiFrvIX@api.756uuey.mongodb.net/api?retryWrites=true&w=majority&appName=api ');
+mongoose.connect('mongodb+srv://magantimeghana10:jHQNz0UpqEiFrvIX@api.756uuey.mongodb.net/api?retryWrites=true&w=majority&appName=api');
 
 const logsFolder = path.join(__dirname, 'logs');
 if (!fs.existsSync(logsFolder)) {
