@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+
+  backend:
+    build:
+      context: ./API-main
+    ports:
+      - "5000:5000"
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./API-main:/app
+  frontend:
+    build:
+      context: ./React-Project-main
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./React-Project-main/src:/app/src
+    stdin_open: true
+    tty: true
+    depends_on:
+      - backend
+
+volumes:
+  data:
+  logs:
