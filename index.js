@@ -70,6 +70,10 @@ async function fetchSwaggerDocs() {
     return 'Swagger documentation content';
 }
 
+app.get("/",(req,res)=>{
+  res.json("Hello");
+})
+
 // Use routers
 app.use('/', userRouter);
 app.use('/', agentRouter);
