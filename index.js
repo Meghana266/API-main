@@ -124,7 +124,7 @@ app.get('/api-docs', async (req, res) => {
  *       404:
  *         description: File not found
  */
-
-app.listen(5000, async function () {
+const port = process.env.PORT || 5000;
+app.listen(port, async function () {
     console.log("Server is running on port 5000");
 }); 
